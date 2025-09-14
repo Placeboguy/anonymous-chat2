@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const db = require('./db');
 
 const app = express();
 const server = http.createServer(app);
@@ -17,8 +18,12 @@ app.use(cors());
 io.on('connection', (socket) => {
   console.log('a user connected');
 
+  // Send existing messages to newly connected client
+  socket.emit('chat history', db.getMessages());
+
   socket.on('chat message', (msg) => {
-    io.emit('chat message', msg);
+    const savedMessage = db.addMessage(msg);
+    io.emit('chat message', savedMessage);
   });
 
   socket.on('disconnect', () => {
