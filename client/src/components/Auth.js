@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import './styles.css';
 
 function Auth({ onAuth }) {
   const [isLogin, setIsLogin] = useState(true);
@@ -12,7 +11,7 @@ function Auth({ onAuth }) {
     setError('');
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_SOCKET_URL}/api/auth/${isLogin ? 'login' : 'register'}`, {
+      const response = await fetch(`http://localhost:5000/api/auth/${isLogin ? 'login' : 'register'}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
