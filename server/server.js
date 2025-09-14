@@ -52,13 +52,15 @@ io.on('connection', (socket) => {
 
   // Handle new chat messages
   socket.on('chat message', (messageData) => {
+    console.log('Received message:', messageData);
     db.run(`INSERT INTO messages (text, username, time) VALUES (?, ?, ?)`,
       [messageData.text, messageData.username, messageData.time],
       (err) => {
         if (err) {
-          console.error(err);
+          console.error('Database error:', err);
           return;
         }
+        console.log('Message saved, broadcasting to all clients');
         io.emit('chat message', messageData);
       }
     );
