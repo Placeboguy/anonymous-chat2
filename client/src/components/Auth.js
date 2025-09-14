@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 
 function Auth({ onAuth }) {
-  const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     try {
-      const response = await fetch(`http://localhost:5000/api/auth/${isLogin ? 'login' : 'register'}`, {
+      // First try to login
+      let response = await fetch('http://localhost:5000/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -19,7 +21,20 @@ function Auth({ onAuth }) {
         body: JSON.stringify({ username, password }),
       });
 
-      const data = await response.json();
+      let data = await response.json();
+      
+      // If login fails with user not found, try to register
+      if (!response.ok && data.message === 'Invalid credentials') {
+        response = await fetch('http://localhost:5000/api/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username, password }),
+        });
+
+        data = await response.json();
+      }
       
       if (!response.ok) {
         throw new Error(data.message || 'Authentication failed');
@@ -30,13 +45,18 @@ function Auth({ onAuth }) {
       onAuth(data);
     } catch (error) {
       setError(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="auth-container">
       <div className="auth-box">
-        <h2>{isLogin ? 'Login' : 'Register'}</h2>
+        <h2>Welcome to Chat</h2>
+        <p className="auth-description">
+          Enter your username and password to continue. New users will be automatically registered.
+        </p>
         {error && <div className="error-message">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -47,6 +67,8 @@ function Auth({ onAuth }) {
               onChange={(e) => setUsername(e.target.value)}
               minLength="3"
               required
+              placeholder="Enter your username"
+              disabled={loading}
             />
           </div>
           <div className="form-group">
@@ -57,18 +79,14 @@ function Auth({ onAuth }) {
               onChange={(e) => setPassword(e.target.value)}
               minLength="6"
               required
+              placeholder="Enter your password"
+              disabled={loading}
             />
           </div>
-          <button type="submit" className="auth-button">
-            {isLogin ? 'Login' : 'Register'}
+          <button type="submit" className="auth-button" disabled={loading}>
+            {loading ? 'Please wait...' : 'Continue'}
           </button>
         </form>
-        <p className="auth-switch">
-          {isLogin ? "Don't have an account? " : "Already have an account? "}
-          <button onClick={() => setIsLogin(!isLogin)}>
-            {isLogin ? 'Register' : 'Login'}
-          </button>
-        </p>
       </div>
     </div>
   );

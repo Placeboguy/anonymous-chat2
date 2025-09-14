@@ -25,9 +25,9 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost/chat-app', {
 // Enhanced CORS configuration for production
 const io = new Server(server, {
   cors: {
-    origin: process.env.ALLOWED_ORIGINS ? 
-      process.env.ALLOWED_ORIGINS.split(',') : 
-      ['http://localhost:3000'],
+    origin: process.env.NODE_ENV === 'production' 
+      ? process.env.ALLOWED_ORIGINS 
+      : ['http://localhost:3001', 'http://localhost:3000'],
     methods: ['GET', 'POST'],
     credentials: true
   }

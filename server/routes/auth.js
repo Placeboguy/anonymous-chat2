@@ -51,13 +51,19 @@ router.post('/login', async (req, res) => {
     // Check if user exists
     const user = await User.findOne({ username });
     if (!user) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(400).json({ 
+        message: 'Invalid credentials',
+        isNewUser: true
+      });
     }
 
     // Check password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(400).json({ 
+        message: 'Incorrect password',
+        isWrongPassword: true
+      });
     }
 
     // Create token
@@ -72,7 +78,8 @@ router.post('/login', async (req, res) => {
       user: {
         id: user._id,
         username: user.username
-      }
+      },
+      message: 'Welcome back!'
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
