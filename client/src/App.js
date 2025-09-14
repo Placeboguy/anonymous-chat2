@@ -7,15 +7,6 @@ const socket = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000', {
   reconnection: true,
 });
 
-// Log socket connection status
-socket.on('connect', () => {
-  console.log('Connected to server');
-});
-
-socket.on('connect_error', (error) => {
-  console.error('Connection error:', error);
-});
-
 // Generate a random username
 const randomUsername = `User${Math.floor(Math.random() * 10000)}`;
 
@@ -79,7 +70,6 @@ function App() {
         username: username,
         time: new Date().toLocaleTimeString(),
       };
-      console.log('Sending message:', messageData);
       socket.emit('chat message', messageData);
       setInput('');
     }
@@ -139,4 +129,3 @@ function App() {
 }
 
 export default App;
-
