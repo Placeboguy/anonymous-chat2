@@ -7,9 +7,7 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: MONGODB_URI
-        sync: false
       - key: JWT_SECRET
-        sync: false
+        value: e89f288c48643597f79d172390d27745e9547658296738fc2679ab994a6547103d778ff21b3c86384f3ca1999a14c09771e0cb453863478cc55c896c9932341b
       - key: ALLOWED_ORIGINS
         sync: false

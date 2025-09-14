@@ -3,9 +3,8 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
-const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
-const Message = require('./models/Message');
+const { messageMethods } = require('./db');
 const authRoutes = require('./routes/auth');
 
 const app = express();
@@ -14,13 +13,6 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 
 const server = http.createServer(app);
-
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost/chat-app', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => console.log('MongoDB connected'))
-  .catch(err => console.log('MongoDB connection error:', err));
 
 // Enhanced CORS configuration for production
 const io = new Server(server, {
@@ -74,11 +66,8 @@ io.on('connection', async (socket) => {
       io.emit('online count', onlineUsers);
 
       // Send chat history
-      const messages = await Message.find()
-        .sort({ createdAt: -1 })
-        .limit(50)
-        .populate('user', 'username');
-      socket.emit('chat history', messages.reverse());
+      const messages = await messageMethods.getRecentMessages(50);
+      socket.emit('chat history', messages);
     } catch (error) {
       socket.emit('auth error', 'Invalid token');
     }
@@ -94,19 +83,14 @@ io.on('connection', async (socket) => {
     if (messageData && typeof messageData.text === 'string') {
       try {
         // Save message to database
-        const message = new Message({
-          text: messageData.text.slice(0, 500).trim(),
-          user: socket.userId,
-          username: messageData.username
-        });
-        await message.save();
+        const message = await messageMethods.saveMessage(
+          messageData.text.slice(0, 500).trim(),
+          socket.userId,
+          messageData.username
+        );
 
         // Broadcast message
-        io.emit('chat message', {
-          ...messageData,
-          _id: message._id,
-          createdAt: message.createdAt
-        });
+        io.emit('chat message', message);
       } catch (error) {
         socket.emit('error', 'Failed to save message');
       }

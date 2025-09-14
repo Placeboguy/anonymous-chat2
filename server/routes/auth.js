@@ -2,88 +2,63 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const { userMethods } = require('../db');
 
-// Register
-router.post('/register', async (req, res) => {
-  try {
-    const { username, password } = req.body;
-
-    // Check if user exists
-    let user = await User.findOne({ username });
-    if (user) {
-      return res.status(400).json({ message: 'Username already exists' });
-    }
-
-    // Create new user
-    const hashedPassword = await bcrypt.hash(password, 10);
-    user = new User({
-      username,
-      password: hashedPassword
-    });
-
-    await user.save();
-
-    // Create token
-    const token = jwt.sign(
-      { userId: user._id, username: user.username },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
-
-    res.status(201).json({
-      token,
-      user: {
-        id: user._id,
-        username: user.username
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// Login
+// Login/Register combined endpoint
 router.post('/login', async (req, res) => {
-  try {
-    const { username, password } = req.body;
+    try {
+        const { username, password } = req.body;
 
-    // Check if user exists
-    const user = await User.findOne({ username });
-    if (!user) {
-      return res.status(400).json({ 
-        message: 'Invalid credentials',
-        isNewUser: true
-      });
+        // Check if user exists
+        const user = await userMethods.findUser(username);
+        
+        if (!user) {
+            // User doesn't exist, create new account
+            const newUser = await userMethods.createUser(username, password);
+            const token = jwt.sign(
+                { userId: newUser.id, username: newUser.username },
+                process.env.JWT_SECRET,
+                { expiresIn: '24h' }
+            );
+
+            return res.status(201).json({
+                token,
+                user: {
+                    id: newUser.id,
+                    username: newUser.username
+                },
+                message: 'Account created successfully!'
+            });
+        }
+
+        // User exists, verify password
+        const isValidPassword = await bcrypt.compare(password, user.password);
+        if (!isValidPassword) {
+            return res.status(400).json({
+                message: 'Invalid password',
+                isWrongPassword: true
+            });
+        }
+
+        // Create token
+        const token = jwt.sign(
+            { userId: user.id, username: user.username },
+            process.env.JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        res.json({
+            token,
+            user: {
+                id: user.id,
+                username: user.username
+            },
+            message: 'Welcome back!'
+        });
+    } catch (error) {
+        console.error('Auth error:', error);
+        res.status(500).json({ message: 'Server error' });
     }
-
-    // Check password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ 
-        message: 'Incorrect password',
-        isWrongPassword: true
-      });
-    }
-
-    // Create token
-    const token = jwt.sign(
-      { userId: user._id, username: user.username },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
-
-    res.json({
-      token,
-      user: {
-        id: user._id,
-        username: user.username
-      },
-      message: 'Welcome back!'
-    });
-  } catch (error) {
-    res.status(500).json({ message: 'Server error' });
-  }
 });
 
 module.exports = router;
