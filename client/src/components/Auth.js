@@ -13,7 +13,7 @@ function Auth({ onAuth }) {
 
     try {
       // First try to login
-      let response = await fetch('http://localhost:5000/api/auth/login', {
+      let response = await fetch(`${process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000'}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -25,7 +25,7 @@ function Auth({ onAuth }) {
       
       // If login fails with user not found, try to register
       if (!response.ok && data.message === 'Invalid credentials') {
-        response = await fetch('http://localhost:5000/api/auth/register', {
+        response = await fetch(`${process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000'}/api/auth/register`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
